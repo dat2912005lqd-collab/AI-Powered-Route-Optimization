@@ -1,9 +1,9 @@
 import math
 import heapq
 class Node:
-  def __init__(latitude, longitude,g,h,parent=Node):
-    self.latitude=latitude
-    self.longitude=longitude
+  def __init__(lat, lon,g,h,parent=Node):
+    self.lat=lat 
+    self.lon=lon
     self.g, self.h=g,h
     self.f=g+h
     self.parent=parent
@@ -20,16 +20,16 @@ class AStarPlanner:
     start_node.h=self.heuristic(start_node,goal_node)
     start_node.f=start_node.g+start_node.h
     open_set=[start_node]
-    visited_g=[(start_node.latitude,start_node.longitude):0.0}
+    visited_g=[(start_node.lat,start_node.lon):0.0}
     while open_set:
       current=heapq.heappop(open_set)
-      if(current.latitude, current.longitude)==(goal_node.latitude,goal_node.longitude):
+      if(current.lat, current.lon==(goal_node.lat,goal_node.lon):
         path=[]
         while current:
-          path.append((current.latitude,current.longitude))
+          path.append((current.lat,current.lon))
           current=current.parent
         return path[::-1]
-      current_coords=(current.latitude, current.longitude)
+      current_coords=(current.lat, current.lon)
       for next_coords,travel_cost in self.traffic_graph.get(current_coords,[]):
         new_g=current.g+travel_cost
         if next_coords not in visited_g or new_g< visited_g[next_coords]:
@@ -44,9 +44,9 @@ def load_graph_from_csv(flie_path):
   with open(file_path,mode='r',encoding='utf-8') as f:
     reader=csv.DictReader(f)
     for row in reader:
-      latitude=float(row['latitude'])
-      longitude=float(row['longitude'])
-      point.append((latitude,longitude))
+      lat=float(row['latitude'])
+      lon=float(row['longitude'])
+      point.append((lat,lon))
   graph={}
   for p1 in points:
     graph[p1]=[]
