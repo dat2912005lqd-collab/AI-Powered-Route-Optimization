@@ -1,18 +1,18 @@
 import pandas as pd
-import math
-import heapq
-class DistanceMatrix:
-  def __init__(self,traffic_sschedule_path,shipper_path):
-    
-    pass
-  def load_traffic_data(self,filepath):
-    
-    pass
-  def build_node_list(self):
-    pass 
-  def build_traffic_graph(self):
-    pass
-  def compute_distance_matrix(self):
-    pass
-  def get_travel_time(self, from_idx,to_idx):
-    pass
+import numpy as np
+from math import radians,cos, sin,asin,sqrt
+class DistanceMatrixBuilder:
+  def __init__(self,cities_name,traffic_path,shipper_path):
+    self.df_cities=pd.read_csv(cities_name)
+    self.df_traffic=pd.read_csv(traffic_path)
+    self.df_shipper=pd.read_csv(shipper_path)
+  def haversine_distance(self,lon1,lat1,lon2,lat2):
+    lon1, lat1,lon2,lat2=map(radians,[lon1, lat1, lon2,lat2])
+    dlon=lon2-lon1
+    dlat=lat2-lat1
+    a=sin(dlat/2)**2+cos(lat1)*cos(lat2)* sin(dlon/2)**2
+    c=2*asin(sqrt(a))
+    r=6731
+    return c*r
+  def get_traffic_factor(self,time_slot):
+    traffic_row=self.df_
