@@ -1,7 +1,7 @@
 city_id,city_name,latitude,longitude,demand
 HCMC,Ho Chi Minh City,10.7756,106.7019,800
 HN,Hanoi,21.0245,105.8412,700
-CT,Cần Thơ	10.1547,105.5005,100
+CT,Cần Thơ,10.1547,105.5005,100
 HP,Haiphong,20.8000,106.6667,135
 BH,Biên Hòa,10.9508,106.8221,85
 TD,Thủ Đức,10.8486,106.7721,90
