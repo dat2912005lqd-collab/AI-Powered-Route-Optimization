@@ -1,0 +1,6 @@
+shipper_id,name_city,city_id,capacity,status,speed_factor,experience
+5001,Nguyen Van A,HCMC,50,available,1.2,5
+5002,Tran Van B,HN,40,available,1.4,2
+5003,Nguyen Thi C,DN,20,available,1,4
+5004,Nguyen Thanh D,HD,10,available,1.3,6
+5005,Le Thu G,DN,15,available,1.4,7
