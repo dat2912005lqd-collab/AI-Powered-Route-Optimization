@@ -15,4 +15,6 @@ class DistanceMatrixBuilder:
     r=6731
     return c*r
   def get_traffic_factor(self,time_slot):
-    traffic_row=self.df_
+    traffic_row=self.df_trafic[self.df_traffic['time_slot']==time_slot]
+    if not traffic_row.empty:
+      return traffic_row['congestion_factor'].values[0]
