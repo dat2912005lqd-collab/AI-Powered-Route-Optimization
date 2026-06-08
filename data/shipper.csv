@@ -3,4 +3,9 @@ shipper_id,name_city,city_id,capacity,status,speed_factor,experience
 5002,Tran Van B,HN,40,available,1.4,2
 5003,Nguyen Thi C,DN,20,available,1,4
 5004,Nguyen Thanh D,HD,10,available,1.3,6
-5005,Le Thu G,DN,15,available,1.4,7
+5005,Le Thu G,TN,30,available,1,4
+5006,Ngo Nhat M,TH,20,available,1.1,6
+5007,Nguyen Thi Thu H,HP,available,1,2
+5008,Ha Viet A,TQ,available,1.1,1
+5009.Nguyen Hoang K,V,available,1.2,6
+5010,Pham Thi L,CT,available,1.3,4
