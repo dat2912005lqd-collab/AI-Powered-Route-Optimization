@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"><title>AI Routing</title>
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <style>
+        body { display: flex; margin: 0; height: 100vh; font-family: sans-serif; }
+        #sidebar { width: 300px; background: #2c3e50; color: white; padding: 15px; z-index: 10; }
+        .card { background: #34495e; padding: 10px; margin-top: 10px; border-left: 5px solid #3498db; }
+        #map { flex: 1; height: 100%; }
+        button { width: 100%; padding: 10px; background: #27ae60; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h3>AI Routing</h3>
+        <button onclick="optimize()">Tối ưu lộ trình</button>
+        <div id="list"></div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com"></script>
+    <script>
+        // Khởi tạo bản đồ nền VN
+        const map = L.map('map').setView([16.0, 108.0], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        async function optimize() {
+            const res = await fetch('/api/optimize'); // Gọi API từ Python Backend
+            const data = await res.json();
+            
+            document.getElementById('list').innerHTML = ''; // Xóa cũ
+            let colors = ['#3498db', '#e74c3c', '#2ecc71'];
+
+            Object.entries(data).forEach(([id, info], idx) => {
+                let color = colors[idx % colors.length];
+
+                // 1. Hiện chữ bên Sidebar
+                document.getElementById('list').innerHTML += `
+                    <div class="card" style="border-left-color: ${color}">
+                        <b>Shipper: ${id}</b><br><small>${info.route.join(' → ')}</small>
+                    </div>`;
+
+                // 2. Vẽ điểm và đường đi lên bản đồ
+                let points = info.coordinates.map(c => [c.latitude, c.longitude]);
+                points.forEach(p => L.marker(p).addTo(map));
+                L.polyline(points, {color: color, weight: 4}).addTo(map);
+            });
+        }
+    </script>
+</body>
+</html>
