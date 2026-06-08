@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from distance_matrix import DistanceMatrixBuilder
-from genetic import GeneticRoutingSolver
+from algorithms.distance_matrix import DistanceMatrixBuilder
+from algorithms.genetic import GeneticRoutingSolver
 class MultiShipperCoordinator:
   def __init__(self,cities_path,traffic_path,shipper_path):
     self.matrix_builder=DistanceMatrixBuilder(cities_path,traffic_path,shipper_path)
@@ -23,7 +23,7 @@ class MultiShipperCoordinator:
         shipper_tasks[best_shipper_id].append(point)
     return shipper_tasks
   def run_multi_routing(self,hour,day_type):
-    active_shippers=self.df_shipper[self.df_shipper['status']=='active']
+    active_shippers=self.df_shipper[self.df_shipper['status'].isin(['active','available'])]
     shipper_tasks=self._assign_cities_to_shippers(active_shippers)
     final_routes={}
     for _,shipper in active_shippers.iterrows():
@@ -34,18 +34,26 @@ class MultiShipperCoordinator:
       shipper_home=self.df_cities[self.df_cities['city_id']==shipper['city_id']].iloc[0].to_dict()
       local_cities=[shipper_home]+assigned_points
       df_local_cities=pd.DataFrame(local_cities)
-      self.matrix_builder.cities=df_local_cities
-      time_matrix=self.matrix_builder.build_time_matrix(hour,day_type,s_id)
-      demands=df_local_cities['demand'].values
-      solver=GeneticRoutingSolver(time_matrix=time_matrix, demands=demands,capacity=shipper['capacity']
-      best_chrom,total_time=solver.evolve()
-       route_names = [df_local_cities.iloc[0]['city_name']] + [df_local_cities.iloc[i]['city_name'] for i in best_chrom]
-            final_routes[s_id] = {
-                "route": route_names,
-                "total_time_minutes": round(total_time, 2)
-            }
-        return final_routes
-      
-    
-      
-          
+      self.matrix_builder.cities = df_local_cities
+      time_matrix = self.matrix_builder.build_time_matrix(hour, day_type, s_id)
+      demands = df_local_cities['demand'].values
+      solver = GeneticRoutingSolver(time_matrix=time_matrix, demands=demands, capacity=shipper['capacity'])
+      best_chrom, total_time = solver.evolve()
+      route_names = [df_local_cities.iloc[0]['city_name']] + [df_local_cities.iloc[i]['city_name'] for i in best_chrom]
+      final_routes[s_id] = {
+        "route": route_names,
+        "total_time_minutes": round(total_time, 2)
+      }
+    return final_routes
+
+if __name__ == '__main__':
+  coordinator = MultiShipperCoordinator(
+    cities_path='data/vietnam_cities.csv',
+    traffic_path='data/traffic_schedule.csv',
+    shipper_path='data/shipper.csv'
+  )
+  routes = coordinator.run_multi_routing(hour=6, day_type='normal')
+  print('Multi-shipper routing results:')
+  for shipper_id, route_info in routes.items():
+    print(f"- shipper {shipper_id}: {route_info['route']} (time={route_info['total_time_minutes']} min)")
+
