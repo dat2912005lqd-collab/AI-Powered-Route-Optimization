@@ -1,4 +1,5 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
+import pandas as pd
 from algorithms.multi_shipper import MultiShipperCoordinator
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -61,6 +62,64 @@ def optimize():
                 'amount': round(optimal_cost, 2)
             }
         }
+    })
+
+def _pick_nearest_points(df_cities, home_id, k=4):
+    home = df_cities[df_cities['city_id'] == home_id]
+    if home.empty:
+        return None
+    home = home.iloc[0]
+    others = df_cities[df_cities['city_id'] != home_id].copy()
+    others['dist2'] = ((others['latitude'] - home['latitude'])**2 + (others['longitude'] - home['longitude'])**2)
+    nearest = others.nsmallest(k, 'dist2').drop(columns=['dist2'])
+    return pd.concat([home.to_frame().T, nearest], ignore_index=True)
+
+@app.route('/api/optimize_custom')
+def optimize_custom():
+    shipper_id = request.args.get('shipper_id', 'custom1')
+    shipper_name = request.args.get('name_city', 'Custom Shipper')
+    city_id = request.args.get('city_id', 'HN')
+    capacity = int(request.args.get('capacity', 80))
+    status = request.args.get('status', 'available')
+    speed_factor = float(request.args.get('speed_factor', 1.0))
+    experience = int(request.args.get('experience', 1))
+    hour = int(request.args.get('hour', 6))
+    day_type = request.args.get('day_type', 'normal')
+
+    temp = MultiShipperCoordinator(
+        cities_path='data/vietnam_cities.csv',
+        traffic_path='data/traffic_schedule.csv',
+        shipper_path='data/shipper.csv'
+    )
+    temp.df_shipper = pd.DataFrame([{
+        'shipper_id': shipper_id,
+        'name_city': shipper_name,
+        'city_id': city_id,
+        'capacity': capacity,
+        'status': status,
+        'speed_factor': speed_factor,
+        'experience': experience
+    }])
+    temp.matrix_builder.df_shipper = temp.df_shipper
+
+    subset = _pick_nearest_points(temp.df_cities, city_id, k=4)
+    if subset is None:
+        return jsonify({'error': 'city_id không tồn tại trong data/vietnam_cities.csv'}), 400
+    temp.df_cities = subset
+
+    routes = temp.run_multi_routing(hour=hour, day_type=day_type)
+    if not routes:
+        return jsonify({'error': 'Không tìm được tuyến tối ưu'}), 500
+
+    route_info = next(iter(routes.values()))
+    return jsonify({
+        'shipper': route_info['shipper_name'],
+        'shipper_id': route_info['shipper_id'],
+        'home_city_id': city_id,
+        'route': route_info['route'],
+        'total_time_minutes': route_info['total_time_minutes'],
+        'total_distance_km': route_info['total_distance_km'],
+        'total_cost': route_info['total_cost']
     })
 
 @app.route('/api/stats')
