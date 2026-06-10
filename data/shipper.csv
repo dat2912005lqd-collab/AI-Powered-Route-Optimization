@@ -5,6 +5,7 @@ shipper_id,name_city,city_id,capacity,status,speed_factor,experience
 5004,Nguyen Thanh D,HD,10,available,1.3,6
 5005,Le Thu G,TN,30,available,1,4
 5006,Ngo Nhat M,TH,20,available,1.1,6
+<<<<<<< HEAD
 5007,Nguyen Thi Thu H,HP,20,available,1,2
 5008,Ha Viet A,TQ,10,available,1.1,1
 5009,Nguyen Hoang K,V,15,available,1.2,6
@@ -12,3 +13,9 @@ shipper_id,name_city,city_id,capacity,status,speed_factor,experience
 5011,Do Van M,HT,25,available,1.2,3
 5012,Le Van N,VT,20,available,1.1,5 
 5013,Phan Thi P,TA,15,available,1.4,2
+=======
+5007,Nguyen Thi Thu H,HP,available,1,2
+5008,Ha Viet A,TQ,available,1.1,1
+5009.Nguyen Hoang K,V,available,1.2,6
+5010,Pham Thi L,CT,available,1.3,4
+>>>>>>> 8a1f5d4620b0e934a24a1ab3798667e42ed7fbbb
