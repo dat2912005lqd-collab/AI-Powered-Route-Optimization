@@ -2,14 +2,16 @@ import pandas as pd
 import numpy as np
 from algorithms.distance_matrix import DistanceMatrixBuilder
 from algorithms.genetic import GeneticRoutingSolver
+
 class MultiShipperCoordinator:
   def __init__(self,cities_path,traffic_path,shipper_path):
-    self.matrix_builder=DistanceMatrixBuilder(cities_path,traffic_path,shipper_path)
-    self.df_shipper=pd.read_csv(shipper_path)
-    self.df_cities=pd.read_csv(cities_path)
+    self.matrix_builder = DistanceMatrixBuilder(cities_path, traffic_path, shipper_path)
+    self.df_shipper = pd.read_csv(shipper_path)
+    self.df_cities = pd.read_csv(cities_path)
   def _assign_cities_to_shippers(self,active_shippers):
     shipper_tasks={s['shipper_id']: [] for _, s in active_shippers .iterrows()}
-    delivery_points=self.df_cities[self.df_cities['city_id']!=0].to_dict('records')
+    home_cities=set(active_shippers['city_id'])
+    delivery_points=self.df_cities[~self.df_cities['city_id'].isin(home_cities)].to_dict('records')
     for point in delivery_points:
       best_shipper_id=None
       min_dist=float('inf')
@@ -35,14 +37,26 @@ class MultiShipperCoordinator:
       local_cities=[shipper_home]+assigned_points
       df_local_cities=pd.DataFrame(local_cities)
       self.matrix_builder.cities = df_local_cities
+      distance_matrix = self.matrix_builder.build_distance_matrix()
       time_matrix = self.matrix_builder.build_time_matrix(hour, day_type, s_id)
       demands = df_local_cities['demand'].values
-      solver = GeneticRoutingSolver(time_matrix=time_matrix, demands=demands, capacity=shipper['capacity'])
-      best_chrom, total_time = solver.evolve()
+      solver = GeneticRoutingSolver(
+        time_matrix=time_matrix,
+        distance_matrix=distance_matrix,
+        demands=demands,
+        capacity=shipper['capacity'],
+        time_cost_per_minute=1.0,
+        distance_cost_per_km=0.6
+      )
+      best_chrom, total_time, total_distance, total_cost = solver.evolve()
       route_names = [df_local_cities.iloc[0]['city_name']] + [df_local_cities.iloc[i]['city_name'] for i in best_chrom]
       final_routes[s_id] = {
+        "shipper_name": shipper['name_city'],
+        "shipper_id": s_id,
         "route": route_names,
-        "total_time_minutes": round(total_time, 2)
+        "total_time_minutes": round(total_time, 2),
+        "total_distance_km": round(total_distance, 2),
+        "total_cost": round(total_cost, 2)
       }
     return final_routes
 

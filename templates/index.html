@@ -1,52 +1,119 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8"><title>AI Routing</title>
+    <meta charset="UTF-8"><title>AI Route Optimization</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="static/style.css" />
     <style>
-        body { display: flex; margin: 0; height: 100vh; font-family: sans-serif; }
-        #sidebar { width: 300px; background: #2c3e50; color: white; padding: 15px; z-index: 10; }
-        .card { background: #34495e; padding: 10px; margin-top: 10px; border-left: 5px solid #3498db; }
+        body { display: flex; margin: 0; height: 100vh; font-family: Arial, sans-serif; }
+        #sidebar { width: 350px; background: #2c3e50; color: white; padding: 15px; z-index: 10; overflow-y: auto; }
         #map { flex: 1; height: 100%; }
-        button { width: 100%; padding: 10px; background: #27ae60; color: white; border: none; cursor: pointer; }
+        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; cursor: pointer; font-size: 14px; margin-bottom: 15px; border-radius: 4px; }
+        button:hover { background: #229954; }
+        h3 { margin-top: 0; color: #3498db; }
+        .summary-box { background: #34495e; padding: 12px; margin-bottom: 15px; border-radius: 4px; border-left: 4px solid #f39c12; }
+        .summary-box b { color: #f39c12; }
+        .summary-item { margin: 8px 0; font-size: 13px; }
+        .shipper-card { background: #34495e; padding: 12px; margin: 10px 0; border-radius: 4px; border-left: 5px solid #3498db; }
+        .shipper-card strong { color: #ecf0f1; }
+        .shipper-card p { margin: 6px 0; font-size: 13px; color: #bdc3c7; }
+        .shipper-card small { color: #95a5a6; display: block; margin-top: 8px; }
+        .optimal-badge { background: #e67e22; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px; }
     </style>
 </head>
 <body>
     <div id="sidebar">
-        <h3>AI Routing</h3>
-        <button onclick="optimize()">Tối ưu lộ trình</button>
+        <h3>🚚 Tối ưu lộ trình</h3>
+        <button onclick="optimize()">Tính toán lộ trình</button>
+        
+        <div id="summary" style="display:none;">
+            <div class="summary-box">
+                <b>📊 Thông tin tối ưu</b>
+                <div class="summary-item">Thời gian nhanh nhất: <span id="opt-time">-</span> phút (<span id="opt-time-shipper">-</span>)</div>
+                <div class="summary-item">Chi phí thấp nhất: <span id="opt-cost">-</span> đ (<span id="opt-cost-shipper">-</span>)</div>
+            </div>
+        </div>
+        
         <div id="list"></div>
     </div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
-        // Khởi tạo bản đồ nền VN
         const map = L.map('map').setView([16.0, 108.0], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22'];
 
         async function optimize() {
-            const res = await fetch('/api/optimize'); // Gọi API từ Python Backend
-            const data = await res.json();
-            
-            document.getElementById('list').innerHTML = ''; // Xóa cũ
-            let colors = ['#3498db', '#e74c3c', '#2ecc71'];
+            try {
+                const res = await fetch('/api/optimize');
+                const data = await res.json();
+                
+                map.eachLayer((layer) => {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                document.getElementById('list').innerHTML = '';
+                
+                if (data.summary) {
+                    document.getElementById('opt-time').textContent = data.summary.optimal_time.minutes;
+                    document.getElementById('opt-time-shipper').textContent = data.summary.optimal_time.shipper;
+                    document.getElementById('opt-cost').textContent = data.summary.optimal_cost.amount;
+                    document.getElementById('opt-cost-shipper').textContent = data.summary.optimal_cost.shipper;
+                    document.getElementById('summary').style.display = 'block';
+                }
+                
+                let colorIndex = 0;
+                const routes = data.routes || data;
+                
+                Object.entries(routes).forEach(([id, info]) => {
+                    const color = colors[colorIndex % colors.length];
+                    colorIndex++;
 
-            Object.entries(data).forEach(([id, info], idx) => {
-                let color = colors[idx % colors.length];
+                    const shipper_name = info.shipper_name || `Shipper ${id}`;
+                    const is_optimal_time = data.summary && data.summary.optimal_time.shipper === shipper_name;
+                    const is_optimal_cost = data.summary && data.summary.optimal_cost.shipper === shipper_name;
 
-                // 1. Hiện chữ bên Sidebar
-                document.getElementById('list').innerHTML += `
-                    <div class="card" style="border-left-color: ${color}">
-                        <b>Shipper: ${id}</b><br><small>${info.route.join(' → ')}</small>
-                    </div>`;
+                    let card_html = `
+                        <div class="shipper-card" style="border-left-color: ${color}">
+                            <strong>👤 ${shipper_name}</strong>
+                            <p>
+                                ⏱️ Thời gian: <strong>${info.total_time_minutes}</strong> phút
+                                ${is_optimal_time ? '<span class="optimal-badge">TỐI ƯU</span>' : ''}
+                            </p>
+                            <p>
+                                📏 Khoảng cách: <strong>${info.total_distance_km}</strong> km
+                            </p>
+                            <p>
+                                💰 Chi phí: <strong>${info.total_cost}</strong> đ
+                                ${is_optimal_cost ? '<span class="optimal-badge">TỐI ƯU</span>' : ''}
+                            </p>
+                            <small>📍 ${info.route.join(' → ')}</small>
+                        </div>`;
+                    
+                    document.getElementById('list').innerHTML += card_html;
 
-                // 2. Vẽ điểm và đường đi lên bản đồ
-                let points = info.coordinates.map(c => [c.latitude, c.longitude]);
-                points.forEach(p => L.marker(p).addTo(map));
-                L.polyline(points, {color: color, weight: 4}).addTo(map);
-            });
+                    if (info.coordinates) {
+                        let points = info.coordinates.map(c => [c.latitude, c.longitude]);
+                        points.forEach((p, idx) => {
+                            L.marker(p, {
+                                title: info.route[idx] || `Điểm ${idx}`
+                            }).addTo(map).bindPopup(`<b>${info.route[idx]}</b><br>Shipper: ${shipper_name}`);
+                        });
+                        L.polyline(points, {color: color, weight: 3, opacity: 0.7}).addTo(map);
+                    }
+                });
+            } catch (error) {
+                console.error("Lỗi:", error);
+                alert("Lỗi tính toán lộ trình!");
+            }
         }
     </script>
 </body>
 </html>
+
