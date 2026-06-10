@@ -112,11 +112,20 @@ def optimize_custom():
         return jsonify({'error': 'Không tìm được tuyến tối ưu'}), 500
 
     route_info = next(iter(routes.values()))
+    city_map = {
+        row['city_name']: {
+            'latitude': float(row['latitude']),
+            'longitude': float(row['longitude'])
+        }
+        for _, row in temp.df_cities.iterrows()
+    }
+    coordinates = [city_map.get(name, {'latitude': 0.0, 'longitude': 0.0}) for name in route_info['route']]
     return jsonify({
-        'shipper': route_info['shipper_name'],
+        'shipper_name': route_info['shipper_name'],
         'shipper_id': route_info['shipper_id'],
         'home_city_id': city_id,
         'route': route_info['route'],
+        'coordinates': coordinates,
         'total_time_minutes': route_info['total_time_minutes'],
         'total_distance_km': route_info['total_distance_km'],
         'total_cost': route_info['total_cost']

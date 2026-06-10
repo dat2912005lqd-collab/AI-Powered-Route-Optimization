@@ -2,17 +2,18 @@ import random
 import numpy as np
 
 class GeneticRoutingSolver:
-  def __init__(self, time_matrix, distance_matrix, demands, capacity, time_cost_per_minute=1.0, distance_cost_per_km=0.5, pop_size=100, generations=200, mutate_rates=0.1):
+  def __init__(self, time_matrix, distance_matrix, demands, capacity, time_cost_per_minute=1.0, distance_cost_per_km=0.5, zone_cost_matrix=None, pop_size=100, generations=200, mutate_rates=0.1):
     self.time_matrix = time_matrix
     self.distance_matrix = distance_matrix
-    self.demands = demands
-    self.capacity = capacity
+    self.demands = np.asarray(demands, dtype=float)
+    self.capacity = float(capacity)
     self.time_cost_per_minute = time_cost_per_minute
     self.distance_cost_per_km = distance_cost_per_km
+    self.zone_cost_matrix = zone_cost_matrix
     self.pop_size = pop_size
     self.generations = generations
     self.mutate_rates = mutate_rates
-    self.num_cities = len(demands)
+    self.num_cities = len(self.demands)
 
   def _generate_chromosome(self):
     cities = list(range(1, self.num_cities))
@@ -22,6 +23,7 @@ class GeneticRoutingSolver:
   def evaluate_chromosome(self, chromosome):
     total_time = 0.0
     total_distance = 0.0
+    total_cost = 0.0
     current_load = 0
     prev_node = 0
     for node in chromosome:

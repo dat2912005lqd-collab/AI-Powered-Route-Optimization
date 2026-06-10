@@ -19,6 +19,10 @@
         .shipper-card p { margin: 6px 0; font-size: 13px; color: #bdc3c7; }
         .shipper-card small { color: #95a5a6; display: block; margin-top: 8px; }
         .optimal-badge { background: #e67e22; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px; }
+        label { display: block; margin: 8px 0 4px; font-size: 13px; color: #ecf0f1; }
+        input, select { width: 100%; padding: 8px 10px; border-radius: 4px; border: 1px solid #7f8c8d; background: #ecf0f1; color: #2c3e50; box-sizing: border-box; }
+        input[type=number] { -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
@@ -26,6 +30,39 @@
         <h3>🚚 Tối ưu lộ trình</h3>
         <button onclick="optimize()">Tính toán lộ trình</button>
         
+        <div class="summary-box" style="background:#1abc9c;">
+            <b>📝 Nhập shipper mới</b>
+            <form id="customForm" onsubmit="event.preventDefault(); optimizeCustom();">
+                <label>Mã shipper</label>
+                <input type="text" id="shipper_id" value="6001" required />
+                <label>Tên shipper</label>
+                <input type="text" id="name_city" value="Nguyen Van X" required />
+                <label>Mã kho hàng (city_id)</label>
+                <input type="text" id="city_id" value="HN" required />
+                <label>Capacity</label>
+                <input type="number" id="capacity" value="80" min="1" required />
+                <label>Status</label>
+                <select id="status">
+                    <option value="available">available</option>
+                    <option value="active">active</option>
+                    <option value="inactive">inactive</option>
+                </select>
+                <label>Speed factor</label>
+                <input type="number" id="speed_factor" value="1.2" step="0.1" min="0.1" required />
+                <label>Experience</label>
+                <input type="number" id="experience" value="5" min="0" required />
+                <label>Giờ</label>
+                <input type="number" id="hour" value="6" min="0" max="23" required />
+                <label>Day type</label>
+                <select id="day_type">
+                    <option value="normal">normal</option>
+                    <option value="weekend">weekend</option>
+                    <option value="holiday">holiday</option>
+                </select>
+                <button type="submit" style="margin-top:10px;">Tính shipper nhập tay</button>
+            </form>
+        </div>
+
         <div id="summary" style="display:none;">
             <div class="summary-box">
                 <b>📊 Thông tin tối ưu</b>
@@ -111,6 +148,63 @@
             } catch (error) {
                 console.error("Lỗi:", error);
                 alert("Lỗi tính toán lộ trình!");
+            }
+        }
+
+        async function optimizeCustom() {
+            const shipper_id = document.getElementById('shipper_id').value;
+            const name_city = document.getElementById('name_city').value;
+            const city_id = document.getElementById('city_id').value;
+            const capacity = document.getElementById('capacity').value;
+            const status = document.getElementById('status').value;
+            const speed_factor = document.getElementById('speed_factor').value;
+            const experience = document.getElementById('experience').value;
+            const hour = document.getElementById('hour').value;
+            const day_type = document.getElementById('day_type').value;
+
+            try {
+                const res = await fetch(`/api/optimize_custom?shipper_id=${encodeURIComponent(shipper_id)}&name_city=${encodeURIComponent(name_city)}&city_id=${encodeURIComponent(city_id)}&capacity=${encodeURIComponent(capacity)}&status=${encodeURIComponent(status)}&speed_factor=${encodeURIComponent(speed_factor)}&experience=${encodeURIComponent(experience)}&hour=${encodeURIComponent(hour)}&day_type=${encodeURIComponent(day_type)}`);
+                const data = await res.json();
+                map.eachLayer((layer) => {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                    }
+                });
+                document.getElementById('list').innerHTML = '';
+                document.getElementById('summary').style.display = 'none';
+
+                if (!res.ok) {
+                    alert(data.error || 'Lỗi khi tính shipper nhập tay');
+                    return;
+                }
+
+                const info = data;
+                const color = colors[0];
+                let card_html = `
+                    <div class="shipper-card" style="border-left-color: ${color}">
+                        <strong>👤 ${info.shipper_name}</strong>
+                        <p>⏱️ Thời gian: <strong>${info.total_time_minutes}</strong> phút</p>
+                        <p>📏 Khoảng cách: <strong>${info.total_distance_km}</strong> km</p>
+                        <p>💰 Chi phí: <strong>${info.total_cost}</strong> đ</p>
+                        <small>📍 ${info.route.join(' → ')}</small>
+                    </div>`;
+                document.getElementById('list').innerHTML = card_html;
+
+                if (info.coordinates) {
+                    const points = info.coordinates.map(c => [c.latitude, c.longitude]);
+                    points.forEach((p, idx) => {
+                        L.marker(p, {
+                            title: info.route[idx] || `Điểm ${idx}`
+                        }).addTo(map).bindPopup(`<b>${info.route[idx]}</b><br>Shipper: ${info.shipper_name}`);
+                    });
+                    L.polyline(points, {color: color, weight: 3, opacity: 0.7}).addTo(map);
+                    if (points.length > 0) {
+                        map.fitBounds(points);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Lỗi khi gọi API nhập tay');
             }
         }
     </script>
