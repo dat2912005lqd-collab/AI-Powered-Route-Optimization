@@ -39,6 +39,7 @@ class MultiShipperCoordinator:
       self.matrix_builder.cities = df_local_cities
       distance_matrix = self.matrix_builder.build_distance_matrix()
       time_matrix = self.matrix_builder.build_time_matrix(hour, day_type, s_id)
+      zone_cost_matrix = self.matrix_builder.build_zone_cost_matrix()
       demands = df_local_cities['demand'].values
       solver = GeneticRoutingSolver(
         time_matrix=time_matrix,
@@ -46,7 +47,8 @@ class MultiShipperCoordinator:
         demands=demands,
         capacity=shipper['capacity'],
         time_cost_per_minute=1.0,
-        distance_cost_per_km=0.6
+        distance_cost_per_km=0.6,
+        zone_cost_matrix=zone_cost_matrix
       )
       best_chrom, total_time, total_distance, total_cost = solver.evolve()
       route_names = [df_local_cities.iloc[0]['city_name']] + [df_local_cities.iloc[i]['city_name'] for i in best_chrom]

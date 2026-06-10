@@ -26,17 +26,38 @@ class GeneticRoutingSolver:
     prev_node = 0
     for node in chromosome:
       if current_load + self.demands[node] > self.capacity:
-        total_time += self.time_matrix[prev_node][0] + self.time_matrix[0][node]
-        total_distance += self.distance_matrix[prev_node][0] + self.distance_matrix[0][node]
+        travel_time = self.time_matrix[prev_node][0] + self.time_matrix[0][node]
+        travel_distance = self.distance_matrix[prev_node][0] + self.distance_matrix[0][node]
+        if self.zone_cost_matrix is not None:
+          travel_cost = ((self.time_matrix[prev_node][0] * self.time_cost_per_minute) + (self.distance_matrix[prev_node][0] * self.distance_cost_per_km)) * self.zone_cost_matrix[prev_node][0]
+          travel_cost += ((self.time_matrix[0][node] * self.time_cost_per_minute) + (self.distance_matrix[0][node] * self.distance_cost_per_km)) * self.zone_cost_matrix[0][node]
+        else:
+          travel_cost = travel_time * self.time_cost_per_minute + travel_distance * self.distance_cost_per_km
+        total_time += travel_time
+        total_distance += travel_distance
+        total_cost += travel_cost
         current_load = self.demands[node]
       else:
-        total_time += self.time_matrix[prev_node][node]
-        total_distance += self.distance_matrix[prev_node][node]
+        travel_time = self.time_matrix[prev_node][node]
+        travel_distance = self.distance_matrix[prev_node][node]
+        if self.zone_cost_matrix is not None:
+          travel_cost = ((travel_time * self.time_cost_per_minute) + (travel_distance * self.distance_cost_per_km)) * self.zone_cost_matrix[prev_node][node]
+        else:
+          travel_cost = travel_time * self.time_cost_per_minute + travel_distance * self.distance_cost_per_km
+        total_time += travel_time
+        total_distance += travel_distance
+        total_cost += travel_cost
         current_load += self.demands[node]
       prev_node = node
-    total_time += self.time_matrix[prev_node][0]
-    total_distance += self.distance_matrix[prev_node][0]
-    total_cost = total_time * self.time_cost_per_minute + total_distance * self.distance_cost_per_km
+    travel_time = self.time_matrix[prev_node][0]
+    travel_distance = self.distance_matrix[prev_node][0]
+    if self.zone_cost_matrix is not None:
+      travel_cost = ((travel_time * self.time_cost_per_minute) + (travel_distance * self.distance_cost_per_km)) * self.zone_cost_matrix[prev_node][0]
+    else:
+      travel_cost = travel_time * self.time_cost_per_minute + travel_distance * self.distance_cost_per_km
+    total_time += travel_time
+    total_distance += travel_distance
+    total_cost += travel_cost
     return total_time, total_distance, total_cost
 
   def calculate_fitness(self, chromosome):
